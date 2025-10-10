@@ -1,0 +1,186 @@
+{% extends 'base.html' %} {% block title %}Chat Room: {{ room_name }}{% endblock
+%} {% block head_styles %}
+<style>
+  /* Custom scrollbar styles */
+  #messages::-webkit-scrollbar {
+    width: 6px;
+  }
+  #messages::-webkit-scrollbar-thumb {
+    background-color: #4a5568;
+    border-radius: 3px;
+  }
+  #messages::-webkit-scrollbar-track {
+    background: #1f2937;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="flex h-screen max-h-screen bg-secondary-bg">
+  <div class="flex flex-col flex-grow min-w-0">
+    <header
+      class="flex items-center justify-between p-4 bg-primary-bg shadow-lg border-b border-gray-700/50 flex-shrink-0"
+    >
+      <div class="flex flex-col">
+        <h2 class="text-2xl font-bold text-white tracking-wide">
+          {{ room_name }}
+        </h2>
+        <p class="text-xs font-medium text-gray-400 mt-0.5">
+          Code: <span class="text-accent-blue font-semibold">{{ code }}</span>
+        </p>
+      </div>
+
+      <button
+        onclick="window.location.href='/';"
+        class="px-4 py-2 text-sm font-semibold text-gray-300 bg-gray-700 rounded-lg hover:bg-red-700 hover:text-white transition duration-300"
+      >
+        Leave Room
+      </button>
+    </header>
+
+    <div class="flex flex-col flex-grow relative overflow-hidden">
+      <div
+        id="messages"
+        class="flex-grow overflow-y-auto p-4 sm:p-6 space-y-4"
+      ></div>
+
+      <div class="h-24 flex-shrink-0"></div>
+
+      <div class="fixed bottom-0 left-0 right-0 z-10 flex justify-center p-4">
+        <div
+          class="w-full max-w-xl bg-primary-bg rounded-2xl shadow-2xl shadow-indigo-900/40 border border-gray-700/50 p-4"
+        >
+          <div class="flex gap-4">
+            <input
+              type="text"
+              placeholder="Type your message here..."
+              name="message"
+              id="message"
+              class="flex-grow px-4 py-3 border border-gray-600 rounded-xl bg-gray-800 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-accent-blue transition duration-200 text-base"
+              onkeypress="if(event.keyCode === 13) sendMessage()"
+            />
+            <button
+              type="button"
+              name="send"
+              id="send-btn"
+              onClick="sendMessage()"
+              class="px-6 py-3 font-bold text-base whitespace-nowrap bg-accent-blue text-white rounded-xl hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent-blue shadow-md shadow-indigo-500/30 transition duration-300 transform hover:-translate-y-0.5"
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <aside
+    class="w-64 flex-shrink-0 bg-primary-bg border-l border-gray-700/50 p-4 flex flex-col overflow-y-auto"
+  >
+    <h3 class="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">
+      👥 Members (<span id="member-count">0</span>)
+    </h3>
+    <ul id="member-list" class="space-y-2"></ul>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.1/socket.io.js"></script>
+<script type="text/javascript">
+  const socketio = io();
+  const messagesContainer = document.getElementById("messages");
+  const messageInput = document.getElementById("message");
+  const memberList = document.getElementById("member-list");
+  const memberCount = document.getElementById("member-count");
+  const currentUserName = "{{ name | safe }}";
+
+  const scrollToBottom = () => {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  };
+  const updateMemberList = (members) => {
+      memberList.innerHTML = ''; // Clear existing list
+      memberCount.textContent = members.length;
+
+      members.forEach(name => {
+          const isCurrentUser = name === currentUserName;
+          const itemClass = isCurrentUser ? 'text-accent-blue font-bold' : 'text-gray-300';
+          const statusIndicator = isCurrentUser ? '🔹' : '•';
+
+          const memberHTML = `
+              <li class="flex items-center space-x-2 text-sm">
+                  <span class="${itemClass}">
+                      ${statusIndicator} ${name}
+                  </span>
+                  ${isCurrentUser ? '<span class="text-xs text-gray-500">(You)</span>' : ''}
+              </li>
+          `;
+          memberList.insertAdjacentHTML('beforeend', memberHTML);
+      });
+  };
+  socketio.on("update_members", (data) => {
+      updateMemberList(data.members);
+  });
+
+  const createMessage = (name, msg, formattedTime) => {
+      const isSystemMessage = name === 'system';
+      if (isSystemMessage) {
+          // --- RENDER SYSTEM MESSAGE ---
+          const systemHTML = `
+              <div class="flex justify-center w-full my-3">
+                  <span class="
+                      text-xs font-medium text-gray-500
+                      bg-gray-800/50 px-3 py-1 rounded-full
+                      shadow-inner
+                  ">
+                      ${msg} • ${formattedTime}
+                  </span>
+              </div>
+          `;
+          messagesContainer.insertAdjacentHTML('beforeend', systemHTML);
+          scrollToBottom();
+          return; // Exit the function after rendering the system message
+      }
+      const isCurrentUser = name === currentUserName;
+      const alignmentClass = isCurrentUser ? 'justify-end' : 'justify-start';
+      const bubbleBg = isCurrentUser ? 'bg-accent-blue' : 'bg-gray-700';
+      const bubbleText = 'text-white';
+      const metaText = isCurrentUser ? 'text-gray-300' : 'text-gray-400';
+      console.log(currentUserName)
+
+      const messageHTML = `
+          <div class="flex ${alignmentClass}">
+              <div class="max-w-xs sm:max-w-md lg:max-w-xl">
+                  ${!isCurrentUser ? `<div class="text-xs font-semibold text-gray-400 mb-1">${name}</div>` : ''}
+                  <div class="${bubbleBg} ${bubbleText} p-3 rounded-2xl ${isCurrentUser ? 'rounded-br-none' : 'rounded-tl-none'} shadow-lg">
+                      ${msg}
+                  </div>
+                  <div class="text-xs ${metaText} mt-1 text-right">
+                      ${formattedTime}
+                  </div>
+              </div>
+          </div>
+      `;
+
+      messagesContainer.insertAdjacentHTML('beforeend', messageHTML);
+      scrollToBottom();
+  };
+
+  socketio.on("message", (data) => {
+      createMessage(data.name, data.message, data.timestamp);
+  });
+
+  const sendMessage = () => {
+      const message = messageInput.value.trim();
+      if (message === "") return;
+
+      socketio.emit("message", { data: message });
+
+      messageInput.value = "";
+  };
+
+  document.addEventListener("DOMContentLoaded", () => {
+      {% for msg in messages %}
+          createMessage("{{ msg.name | e }}", "{{ msg.message | e }}", "{{ msg.time | e }}");
+      {% endfor %}
+
+      scrollToBottom();
+  });
+</script>
+{% endblock %}

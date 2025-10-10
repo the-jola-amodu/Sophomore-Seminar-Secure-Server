@@ -67,7 +67,22 @@
       <span class="flex-shrink mx-4 text-sm text-gray-500 font-medium">OR</span>
       <div class="flex-grow border-t border-gray-700/50"></div>
     </div>
-
+    <div class="mb-8">
+      <label
+        for="room_name_input"
+        class="block text-sm font-medium text-gray-300 mb-2"
+      >
+        New Room Name (Required for Creation)
+      </label>
+      <input
+        type="text"
+        id="room_name_input"
+        placeholder="Enter a fun name for your room"
+        name="room_name_input"
+        value="{{ room_name_input or '' }}"
+        class="w-full px-5 py-3 border border-gray-600 rounded-xl bg-gray-800 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-accent-blue transition duration-200 text-base"
+      />
+    </div>
     <button
       type="submit"
       name="create"
