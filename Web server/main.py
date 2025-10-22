@@ -5,13 +5,81 @@ import os
 from string import ascii_uppercase
 from dotenv import load_dotenv
 from datetime import datetime
+from werkzeug.utils import secure_filename
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static/uploads')
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'zip', 'mp4'} 
+MAX_FILE_SIZE_MB = 50
 
 load_dotenv()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE_MB * 1024 * 1024
 socketio = SocketIO(app)
 
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
 rooms = {}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route("/upload", methods=["POST"])
+def upload_file():
+    room = session.get("room")
+    name = session.get("name")
+    
+    if not room or not name:
+        return {"error": "Not logged in or room missing"}, 403
+    
+    # 1. Check if the post request has the file part
+    if 'file' not in request.files:
+        return {"error": "No file part"}, 400
+    
+    file = request.files['file']
+    
+    # 2. Check if user selected a file
+    if file.filename == '':
+        return {"error": "No selected file"}, 400
+        
+    if file and allowed_file(file.filename):
+        # 3. Securely save the file
+        filename = secure_filename(file.filename)
+        # Prepend a timestamp to avoid naming collisions
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_")
+        safe_filename = timestamp + filename
+        
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], safe_filename)
+        file.save(file_path)
+        
+        # 4. Construct the URL accessible by clients
+        file_url = url_for('static', filename=f'uploads/{safe_filename}')
+        _, file_extension = os.path.splitext(filename)
+    
+        # Create the clean display text
+        if file_extension:
+            # Example: "File: PNG" or "File: PDF"
+            link_text = f"File: {file_extension.upper().lstrip('.')}" 
+        else:
+            link_text = "Download File"
+        
+        # Message content will be a description + a link
+        content = {
+            "name": name,
+            "message": f"Shared: <a href='{file_url}' target='_blank' download='{filename}' class='text-gray-200 hover:underline font-semibold'>{link_text}</a>",
+            "timestamp": datetime.now().strftime("%I:%M %p")
+        }
+        
+        # Send via SocketIO
+        socketio.emit('message', content, to=room)
+        
+        return {"success": True, "filename": filename, "url": file_url}, 200
+    
+    return {"error": "File type not allowed"}, 400
 
 def generate_unique_code(length):
     while True:
