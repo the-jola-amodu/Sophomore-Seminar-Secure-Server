@@ -106,10 +106,13 @@ def home():
         if join != False and not code:
             return render_template("home.html", error="Pleae enter a room code.", code=code, name=user_name)
         
+        if join != False and user_name in rooms[code]["members"]:
+            return render_template("home.html", error="This username is already in use in this room. Please choose another name.", code=code, name=user_name)
+
         room = code
 
         if create != False:
-            room = generate_unique_code(4) 
+            room = generate_unique_code(5) 
             rooms[room] = {"name": room_name_input, "members": [], "messages": []}
         elif code not in rooms:
             return render_template("home.html", error="Room does not exist.", code=code, name=user_name)
