@@ -1,0 +1,95 @@
+{% extends 'base.html' %} {% block content %}
+<div
+  class="flex items-center justify-center min-h-screen py-10 px-4 sm:px-6 lg:px-8"
+>
+  <form
+    method="post"
+    class="w-full max-w-lg p-8 sm:p-12 bg-primary-bg rounded-2xl shadow-2xl border border-gray-700/50 transition duration-500 ease-in-out hover:shadow-indigo-900/70"
+  >
+    {% if error %}
+    <div
+      class="mt-6 p-4 text-center bg-red-900/30 border border-red-700 rounded-xl"
+    >
+      <p class="text-base font-medium text-red-300">🚨 {{ error }}</p>
+    </div>
+    {% endif %}
+    <div class="text-center mb-10">
+      <h3 class="text-4xl font-extrabold text-white tracking-tight mb-2">
+        Let's Chitchat! 💬
+      </h3>
+      <p class="text-gray-400 text-lg font-light">
+        Join an existing room or create your own.
+      </p>
+    </div>
+
+    <div class="mb-8">
+      <label for="name" class="block text-sm font-medium text-gray-300 mb-2">
+        Your Display Name
+      </label>
+      <input
+        type="text"
+        id="name"
+        placeholder="Enter a professional alias"
+        name="name"
+        value="{{ name }}"
+        required
+        class="w-full px-5 py-3 border border-gray-600 rounded-xl bg-gray-800 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-accent-blue transition duration-200 text-base"
+      />
+    </div>
+
+    <fieldset class="p-6 border border-gray-700 rounded-xl mb-8">
+      <legend class="text-sm font-semibold text-accent-blue px-2 ml-4">
+        Join Existing
+      </legend>
+
+      <div class="flex flex-col sm:flex-row gap-4">
+        <input
+          type="text"
+          placeholder="Room Code (e.g., ABCDZ)"
+          name="code"
+          value="{{ code }}"
+          maxlength="6"
+          class="flex-grow px-5 py-3 border border-gray-600 rounded-xl bg-gray-800 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-accent-blue transition duration-200 text-base"
+        />
+
+        <button
+          type="submit"
+          name="join"
+          class="w-full sm:w-auto px-6 py-3 font-bold text-base bg-accent-blue text-white rounded-xl hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent-blue shadow-md shadow-indigo-500/30 transition duration-300 transform hover:-translate-y-0.5"
+        >
+          Connect
+        </button>
+      </div>
+    </fieldset>
+
+    <div class="relative flex justify-center items-center mb-8">
+      <div class="flex-grow border-t border-gray-700/50"></div>
+      <span class="flex-shrink mx-4 text-sm text-gray-500 font-medium">OR</span>
+      <div class="flex-grow border-t border-gray-700/50"></div>
+    </div>
+    <div class="mb-8">
+      <label
+        for="room_name_input"
+        class="block text-sm font-medium text-gray-300 mb-2"
+      >
+        New Room Name (Required for Creation)
+      </label>
+      <input
+        type="text"
+        id="room_name_input"
+        placeholder="Enter a fun name for your room"
+        name="room_name_input"
+        value="{{ room_name_input or '' }}"
+        class="w-full px-5 py-3 border border-gray-600 rounded-xl bg-gray-800 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-accent-blue transition duration-200 text-base"
+      />
+    </div>
+    <button
+      type="submit"
+      name="create"
+      class="w-full py-4 text-lg font-bold text-white bg-indigo-600 rounded-xl shadow-xl shadow-indigo-600/40 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/50 transition duration-300 transform hover:scale-[1.01] hover:shadow-indigo-600/60"
+    >
+      ✨ Create New Room
+    </button>
+  </form>
+</div>
+{% endblock %}
